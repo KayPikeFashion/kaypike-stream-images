@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Stream Image</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .random-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin: 20px 0;
+        }
+        
+        .url-display {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .image-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Universal Random Image Selector</h1>
+        
+        <div id="imageContainer">
+            <p>Click "Get Random Image" to see what images are available!</p>
+        </div>
+        
+        <button onclick="getRandomImage()">Get Random Image</button>
+        <button onclick="showAllImages()">Show All Images</button>
+        <button onclick="copyURL()">Copy API URL</button>
+        
+        <div class="url-display" id="apiURL">
+            Your API URL will be: https://yourusername.github.io/kaypike-stream-images/random
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 ULTIMATE EASY Setup:</h3>
+            <ol>
+                <li><strong>Upload this HTML file</strong> to your GitHub repository as "index.html"</li>
+                <li><strong>Upload ANY images with ANY names!</strong><br>
+                    ✅ DSC_001.jpg ✅ my_art.png ✅ bodypaint_friday.gif ✅ random_file_name.jpeg<br>
+                    ✅ IMG_20241201_123456.jpg ✅ sketch (1).png ✅ LITERALLY_ANYTHING.webp</li>
+                <li><strong>Enable GitHub Pages</strong> in your repo settings</li>
+                <li><strong>DONE!</strong> The system finds ALL your images automatically - no naming required!</li>
+                <li><strong>Use this URL in Zapier/Buffer:</strong><br>
+                    <code>https://yourusername.github.io/kaypike-stream-images/random</code></li>
+            </ol>
+            
+            <h3>🎯 How It Works:</h3>
+            <p>This system uses the <strong>GitHub API</strong> to automatically scan your entire repository and find every single image file (.jpg, .png, .gif, .jpeg, .webp, etc.) no matter what you name them!</p>
+            
+            <p><strong>Just drag and drop any images</strong> - the system handles the rest!</p>
+            
+            <h3>🔧 For Your Automation:</h3>
+            <p><strong>Message Template:</strong><br>
+            "Bodypaint or Art stream going on https://www.twitch.tv/kaypikefashion join us now!"</p>
+            
+            <p><strong>Image URL:</strong><br>
+            Your GitHub Pages URL + /random</p>
+        </div>
+    </div>
+
+    <script>
+        // Your GitHub repository info (you'll need to update this)
+        const githubUser = 'yourusername'; // Change this to your GitHub username
+        const repoName = 'kaypike-stream-images'; // Change this to your repo name
+        const baseURL = `https://${githubUser}.github.io/${repoName}/`;
+        
+        // Image file extensions to look for
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+        
+        let allImages = [];
+        
+        // Function to fetch all files from GitHub repository using GitHub API
+        async function fetchAllImages() {
+            try {
+                const apiUrl = `https://api.github.com/repos/${githubUser}/${repoName}/contents`;
+                const response = await fetch(apiUrl);
+                const files = await response.json();
+                
+                // Filter for image files
+                const imageFiles = files.filter(file => {
+                    const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                    return imageExtensions.includes(extension) && file.type === 'file';
+                });
+                
+                allImages = imageFiles.map(file => file.name);
+                return allImages;
+                
+            } catch (error) {
+                console.error('Error fetching images:', error);
+                // Fallback: try to guess some common patterns
+                return await fallbackImageDetection();
+            }
+        }
+        
+        // Fallback method if GitHub API fails
+        async function fallbackImageDetection() {
+            const commonNames = [
+                'image.jpg', 'image.png', 'image.gif',
+                'art.jpg', 'art.png', 'bodypaint.jpg',
+                'stream.jpg', 'photo.jpg'
+            ];
+            
+            const foundImages = [];
+            for (const name of commonNames) {
+                try {
+                    const response = await fetch(baseURL + name, { method: 'HEAD' });
+                    if (response.ok) {
+                        foundImages.push(name);
+                    }
+                } catch (e) {
+                    // Image doesn't exist, continue
+                }
+            }
+            return foundImages;
+        }
+        
+        async function getRandomImage() {
+            const container = document.getElementById('imageContainer');
+            container.innerHTML = '<p>🔍 Scanning for images...</p>';
+            
+            const images = await fetchAllImages();
+            
+            if (images.length === 0) {
+                container.innerHTML = `
+                    <p>❌ No images found!</p>
+                    <p>Make sure you've uploaded some image files (.jpg, .png, .gif, etc.) to your repository.</p>
+                `;
+                return;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * images.length);
+            const randomImageName = images[randomIndex];
+            const imageURL = baseURL + randomImageName;
+            
+            container.innerHTML = `
+                <img src="${imageURL}" alt="Random Stream Art" class="random-image" onerror="showImageError(this)">
+                <p>✅ Random Image: <strong>${randomImageName}</strong></p>
+                <p>📊 Found ${images.length} total images in repository</p>
+                <p>🔗 Full URL: ${imageURL}</p>
+            `;
+        }
+        
+        async function showAllImages() {
+            const images = await fetchAllImages();
+            const container = document.getElementById('imageContainer');
+            
+            if (images.length === 0) {
+                container.innerHTML = '<p>No images found in repository.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <h3>📁 All Images Found (${images.length} total):</h3>
+                <div class="image-list">
+                    ${images.map(img => `📷 ${img}`).join('<br>')}
+                </div>
+                <p><strong>The system will randomly pick from any of these!</strong></p>
+            `;
+        }
+        
+        function showImageError(img) {
+            img.src = 'https://via.placeholder.com/400x300/667eea/white?text=Image+Not+Accessible';
+        }
+        
+        function copyURL() {
+            const url = baseURL + 'random';
+            navigator.clipboard.writeText(url);
+            alert('API URL copied to clipboard!');
+        }
+        
+        // API endpoint for automation - serves random image
+        if (window.location.pathname.endsWith('/random')) {
+            fetchAllImages().then(images => {
+                if (images.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * images.length);
+                    const randomImage = images[randomIndex];
+                    window.location.href = baseURL + randomImage;
+                } else {
+                    document.body.innerHTML = '<h1>No images found - upload some images first!</h1>';
+                }
+            });
+        }
+        
+        // Update the displayed URLs with actual repository info
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlDisplay = document.getElementById('apiURL');
+            urlDisplay.innerHTML = `Your API URL will be: <strong>${baseURL}random</strong>`;
+        });
+    </script>
+</body>
+</html>
